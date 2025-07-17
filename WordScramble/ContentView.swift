@@ -16,6 +16,8 @@ struct ContentView: View {
     @State private var errorMessage = ""
     @State private var showingError = false
     
+    @State private var userScore = 0
+    
     var body: some View {
         NavigationStack {
             List {
@@ -23,6 +25,8 @@ struct ContentView: View {
                     TextField("Enter Your Word", text: $newWord)
                         .textInputAutocapitalization(.never)
                 }
+                
+                Text("Your score: \(userScore)")
                 
                 Section {
                     ForEach(usedWords, id: \.self) { word in
@@ -40,6 +44,11 @@ struct ContentView: View {
                 Button("OK") { }
             } message: {
                 Text(errorMessage)
+            }
+            .toolbar {
+                Button("Restart") {
+                    startGame()
+                }
             }
         }
     }
@@ -64,14 +73,42 @@ struct ContentView: View {
             return
         }
         
+        guard isLong(word: answer) else {
+            wordError(title: "Word too short", message: "Try a word with 4 letters or more!")
+            return
+        }
+        
+        guard isNewWord(word: answer) else {
+            wordError(title: "Original word not permitted", message: "Try a new word!")
+            return
+        }
+        
         withAnimation {
             usedWords.insert(answer, at: 0)
+        }
+        
+        switch answer.count {
+        case 4:
+            userScore += 1
+        case 5:
+            userScore += 2
+        case 6:
+            userScore += 3
+        case 7:
+            userScore += 4
+        case 8:
+            userScore += 5
+        default:
+            break
         }
         
         newWord = ""
     }
     
     func startGame() {
+        userScore = 0
+        usedWords.removeAll()
+
         if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
             if let startWords = try? String(contentsOf: startWordsURL, encoding: .utf8) {
                 let allWords = startWords.components(separatedBy: "\n")
@@ -113,6 +150,15 @@ struct ContentView: View {
         errorMessage = message
         showingError = true
     }
+    
+    func isLong(word: String) -> Bool {
+        word.count > 3 && word != rootWord
+    }
+    
+    func isNewWord(word: String) -> Bool {
+        word != rootWord
+    }
+    
 }
 
 #Preview {
